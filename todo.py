@@ -29,7 +29,8 @@ class Handler:
             items = f.readlines()
         ##Enhancement 2 The entries are listed First entry 1
         for i, line in enumerate(items, start=1):
-            print(f"{i} {line.strip()}")
+            ### Enhancement 3 indentation
+            print(f"{i:{2 if i<=9 else 0}} {line.strip()}")
         print(f"---\n{len(items)} item(s)")
 
     def done(self):
@@ -92,7 +93,7 @@ class Handler:
             )
             f.write(new_todos)
 
-        print(f"Done: {items[args.line_number -1].strip()}")
+        print(f"Done: {items[args.line_number-1].strip()}")
 
 
 if __name__ == "__main__":
