@@ -27,7 +27,8 @@ class Handler:
         """Show all items in the todo file."""
         with open(self.todo_file) as f:
             items = f.readlines()
-        for i, line in enumerate(items):
+        ##Enhancement 2 The entries are listed First entry 1
+        for i, line in enumerate(items, start=1):
             print(f"{i} {line.strip()}")
         print(f"---\n{len(items)} item(s)")
 
@@ -73,14 +74,14 @@ class Handler:
                 f.write(
                     "\n %s (%s)"
                     % (
-                        items[args.line_number].strip(),
+                        items[args.line_number - 1].strip(),
                         current_datetime.strftime("%d-%m-%Y"),
                     )
                 )
             except IndexError:
 
                 print(
-                    f"There is no item {args.line_number}. Please choose a number from 0 to {len(items)-1}"
+                    f"There is no item {args.line_number}. Please choose a number from 1 to {len(items)}"
                 )
                 return
 
@@ -91,7 +92,7 @@ class Handler:
             )
             f.write(new_todos)
 
-        print(f"Done: {items[args.line_number].strip()}")
+        print(f"Done: {items[args.line_number -1].strip()}")
 
 
 if __name__ == "__main__":
