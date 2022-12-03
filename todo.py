@@ -63,8 +63,16 @@ class Handler:
             items = f.readlines()
 
         # Append the done item to the done file
+        # ..bug 2...IndexError avoided
         with open(self.done_file, "a") as f:
-            f.write(items[args.line_number])
+            try:
+                f.write(items[args.line_number])
+            except IndexError:
+
+                print(
+                    f"There is no item {args.line_number}. Please choose a number from 0 to {len(items)-1}"
+                )
+                return
 
         # Write out all but the done items
         with open(self.todo_file, "w") as f:
