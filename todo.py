@@ -40,9 +40,13 @@ class Handler:
 
     def add(self):
         """Add a new item to the todo file."""
+        ### ....Bug 1 ...
+        def singleLine(string):
+            return " ".join([word[:] for word in string.split()])
+
         parser = argparse.ArgumentParser()
         parser.add_argument("action", choices=["add"])
-        parser.add_argument("item", type=str)
+        parser.add_argument("item", type=singleLine)
         args = parser.parse_args()
         with open(self.todo_file, "a") as f:
             f.write(args.item + "\n")
