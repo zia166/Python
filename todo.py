@@ -1,3 +1,4 @@
+from datetime import datetime
 import argparse
 
 import settings
@@ -66,7 +67,16 @@ class Handler:
         # ..bug 2...IndexError avoided
         with open(self.done_file, "a") as f:
             try:
-                f.write(items[args.line_number])
+                #### Enhancement 1 append the date in the done.txt file.
+                current_datetime = datetime.now()
+
+                f.write(
+                    "\n %s (%s)"
+                    % (
+                        items[args.line_number].strip(),
+                        current_datetime.strftime("%d-%m-%Y"),
+                    )
+                )
             except IndexError:
 
                 print(
