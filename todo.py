@@ -1,6 +1,6 @@
 from datetime import datetime
 import argparse
-
+import re
 import settings
 
 
@@ -25,12 +25,36 @@ class Handler:
 
     def list(self):
         """Show all items in the todo file."""
-        with open(self.todo_file) as f:
+
+        def hyphenated(string):
+            return " ".join([word[:] for word in string.casefold().split()])
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "action",
+            nargs="?",
+            default=None,
+            choices=["list"],
+        )
+        parser.add_argument(
+            "search",
+            default=None,
+            type=hyphenated,
+        )
+        args = parser.parse_args()
+        with open(self.todo_file, "r") as f:
+
             items = f.readlines()
-        ##Enhancement 2 The entries are listed First entry 1
-        for i, line in enumerate(items, start=1):
-            ### Enhancement 3 indentation
-            print(f"{i:{2 if i<=9 else 0}} {line.strip()}")
+            ##Enhancement 2 The entries are listed First entry 1
+            ### Enhancement 5 Add filtering
+            for i, lines in enumerate(items, start=1):
+                if args.action is not None:
+                    result = re.findall(args.search, lines, flags=re.IGNORECASE)
+                    if result:
+                        ### Enhancement 3 indentation
+                        print(f"{i:{2 if i<=9 else 0}} {lines.strip()}")
+                else:
+                    print(f"{i:{2 if i<=9 else 0}} {lines.strip()}")
         print(f"---\n{len(items)} item(s)")
 
     def done(self):
@@ -94,6 +118,24 @@ class Handler:
             f.write(new_todos)
 
         print(f"Done: {items[args.line_number-1].strip()}")
+
+    ### Enhancement 4 Implement deletion
+
+    def delete(self):
+
+        """delete item from todo file."""
+        parser = argparse.ArgumentParser()
+        parser.add_argument("action", choices=["delete"])
+        parser.add_argument("item", type=int)
+        args = parser.parse_args()
+
+        with open(self.todo_file, "r") as f:
+            items = f.readlines()
+            with open(self.todo_file, "w") as f:
+                for line, data in enumerate(items, start=1):
+                    if line != args.item:
+                        f.write(data)
+        print(f"Deleted: {items[args.item -1].strip()}")
 
 
 if __name__ == "__main__":
