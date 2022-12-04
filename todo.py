@@ -33,7 +33,6 @@ class Handler:
         parser.add_argument(
             "action",
             nargs="?",
-            default=None,
             choices=["list"],
         )
         parser.add_argument(
@@ -42,19 +41,45 @@ class Handler:
             type=hyphenated,
         )
         args = parser.parse_args()
-        with open(self.todo_file, "r") as f:
+        print(args.action)
+        if args.action is None:
+            with open(self.todo_file, "r") as f:
+                items = f.readlines()
+                item1, item2 = [], []
+                index1, index2 = [], []
+                for i, line in enumerate(
+                    items, start=1
+                ):  ##Enhancement 2 The entries are listed First entry 1
 
-            items = f.readlines()
-            ##Enhancement 2 The entries are listed First entry 1
-            ### Enhancement 5 Add filtering
-            for i, lines in enumerate(items, start=1):
-                if args.action is not None:
+                    if line.startswith(
+                        "("
+                    ):  ### Enhancement 6 ..List items by priority.
+                        result = line[line.find("(") + 1 : line.find(")")]
+                        item1.append(line)
+                        index1.append(i)
+                        item1 = sorted(item1)
+                    else:
+                        item2.append(line)
+                        index2.append(i)
+
+                i = 0
+                for line in item1:
+                    ##Enhancement 3 Prevent different indentation
+                    print(f"{index1[i]:{2 if i<=9 else 0}} {line}")
+                    i = i + 1
+                i = 0
+                for val in item2:
+                    print(f"{index2[i]:{2 if i<=9 else 0}} {val}")
+                    i = i + 1
+        else:
+            with open(self.todo_file, "r") as f:
+                items = f.readlines()
+                ### Enhancement 5 Add filtering
+                for i, lines in enumerate(items, start=1):
                     result = re.findall(args.search, lines, flags=re.IGNORECASE)
                     if result:
-                        ### Enhancement 3 indentation
                         print(f"{i:{2 if i<=9 else 0}} {lines.strip()}")
-                else:
-                    print(f"{i:{2 if i<=9 else 0}} {lines.strip()}")
+
         print(f"---\n{len(items)} item(s)")
 
     def done(self):
