@@ -112,7 +112,7 @@ class Handler:
         parser = argparse.ArgumentParser()
         parser.add_argument("action", choices=["add"])
         parser.add_argument("item", type=singleLine)
-        args = parser.parse_args()
+        args, unknown = parser.parse_known_args()
         # print(args.item)
         with open(self.todo_file, "a") as f:
             f.write(args.item + "\n")
@@ -176,7 +176,7 @@ class Handler:
                         f.write(data)
         print(f"Deleted: {items[args.item -1].strip()}")
 
-    ### Enhancement 7 Enable assigning a priority to an item:
+    ### Enhancement 7 Enable assigning a priority to an item
     def pri(self):
 
         parser = argparse.ArgumentParser()
