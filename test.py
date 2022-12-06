@@ -3,8 +3,10 @@ import unittest
 from io import StringIO
 from textwrap import dedent
 from unittest.mock import call, mock_open, patch
-
+from datetime import datetime
 from todo import Handler
+
+current_datetime = datetime.now()
 
 
 class PrintTestCase(unittest.TestCase):
@@ -34,8 +36,8 @@ class TestList(PrintTestCase):
             Handler().list()
         expected = dedent(
             """\
-            0 One
-            1 Two
+             1 One
+             2 Two
             ---
             2 item(s)
             """
@@ -65,21 +67,36 @@ class TestList(PrintTestCase):
             Handler().list()
         expected = dedent(
             """\
-            0 One
-            1 Two
-            2 Three
-            3 Four
-            4 Five
-            5 Six
-            6 Seven
-            7 Eight
-            8 Nine
-            9 Ten
-            10 Eleven
+             1 One
+             2 Two
+             3 Three
+             4 Four
+             5 Five
+             6 Six
+             7 Seven
+             8 Eight
+             9 Nine
+            10 Ten
+            11 Eleven
             ---
             11 item(s)
             """
         )
+        self.assertPrinted(expected)
+
+    # Test case for filter
+    def test_search(self):
+        m = mock_open(read_data="One\nTwo\nThree\n")
+        with patch("todo.open", m):
+            with patch.object(sys, "argv", ["todo.py", "list", "One"]):
+                Handler().list()
+            expected = dedent(
+                """\
+             1 One
+            ---
+            3 item(s)
+            """
+            )
         self.assertPrinted(expected)
 
 
@@ -161,6 +178,7 @@ class TestDo(PrintTestCase):
             with patch.object(sys, "argv", ["todo.py", "do", "1"]):
                 Handler().handle()
         self.maxDiff = None
+
         expected_calls = [
             call("todo.txt", "r"),  # open todo.txt in read mode
             call().__enter__(),
@@ -168,7 +186,9 @@ class TestDo(PrintTestCase):
             call().__exit__(None, None, None),
             call("done.txt", "a"),  # open done.txt in append mode
             call().__enter__(),
-            call().write("Two\n"),  # write "Two" to done.txt
+            call().write(
+                "\n Two (%s)" % (current_datetime.strftime("%d-%m-%Y"))
+            ),  # write "Two" to done.txt
             call().__exit__(None, None, None),
             call("todo.txt", "w"),
             call().__enter__(),
@@ -182,23 +202,27 @@ class TestDo(PrintTestCase):
     def test_doing_the_first_item(self):
         m = mock_open(read_data="One\nTwo\nThree\n")
         with patch("todo.open", m):
-            with patch.object(sys, "argv", ["todo.py", "do", "0"]):
+            with patch.object(sys, "argv", ["todo.py", "do", "0"]):  # changed 0 -- 1
                 Handler().handle()
 
         self.assertEqual(len(m.mock_calls), 12)
-        self.assertAppendedToDoneFile(m, "One\n")
-        self.assertWrittenToTodoFile(m, "Two\nThree\n")
+        self.assertAppendedToDoneFile(
+            m, "\n One (%s)" % (current_datetime.strftime("%d-%m-%Y"))
+        )  # changed
+        self.assertWrittenToTodoFile(m, "Two\nThree\n")  # changed
         self.assertPrinted("Done: One\n")
 
     def test_doing_the_last_item(self):
         m = mock_open(read_data="One\nTwo\nThree\n")
         with patch("todo.open", m):
-            with patch.object(sys, "argv", ["todo.py", "do", "2"]):
+            with patch.object(sys, "argv", ["todo.py", "do", "3"]):  # changed 2 -- 3
                 Handler().handle()
 
         self.assertEqual(len(m.mock_calls), 12)
-        self.assertAppendedToDoneFile(m, "Three\n")
-        self.assertWrittenToTodoFile(m, "One\nTwo\n")
+        self.assertAppendedToDoneFile(
+            m, "\n Three (%s)" % (current_datetime.strftime("%d-%m-%Y"))
+        )  # changed
+        self.assertWrittenToTodoFile(m, "One\nTwo\nThree\n")  # changed
         self.assertPrinted("Done: Three\n")
 
 
