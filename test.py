@@ -24,7 +24,7 @@ class PrintTestCase(unittest.TestCase):
 class TestList(PrintTestCase):
     def test_action(self):
         """Test that the list() method is called"""
-        testargs = ["todo.py", "list"]
+        testargs = ["todo.py", "list", "search"]
         with patch.object(sys, "argv", testargs):
             handler = Handler()
             with patch.object(handler, "list") as mock_list:
@@ -33,7 +33,8 @@ class TestList(PrintTestCase):
 
     def test_basic(self):
         with patch("todo.open", mock_open(read_data="One\nTwo\n")):
-            Handler().list()
+            with patch.object(sys, "argv", ["todo.py", "list"]):
+                Handler().list()
         expected = dedent(
             """\
              1 One
@@ -47,7 +48,8 @@ class TestList(PrintTestCase):
     def test_empty(self):
         """Ensure that an empty file prints only the summary"""
         with patch("todo.open", mock_open()):
-            Handler().list()
+            with patch.object(sys, "argv", ["todo.py", "list"]):
+                Handler().list()
         expected = dedent(
             """\
             ---
@@ -64,7 +66,8 @@ class TestList(PrintTestCase):
                 read_data="One\nTwo\nThree\nFour\nFive\nSix\nSeven\nEight\nNine\nTen\nEleven"
             ),
         ):
-            Handler().list()
+            with patch.object(sys, "argv", ["todo.py", "list"]):
+                Handler().list()
         expected = dedent(
             """\
              1 One
@@ -85,11 +88,12 @@ class TestList(PrintTestCase):
         self.assertPrinted(expected)
 
     # Test case for filter
-    def test_search(self):
+    def test_search_word(self):
         m = mock_open(read_data="One\nTwo\nThree\n")
         with patch("todo.open", m):
             with patch.object(sys, "argv", ["todo.py", "list", "One"]):
                 Handler().list()
+
             expected = dedent(
                 """\
              1 One
@@ -116,6 +120,7 @@ class TestAdd(PrintTestCase):
         with patch("todo.open", m):
             with patch.object(sys, "argv", ["todo.py", "add", "Foo"]):
                 Handler().add()
+
         self.assertEqual(m.mock_calls[0], call("todo.txt", "a"))
         self.assertEqual(m.mock_calls[1], call().__enter__())
 
@@ -187,12 +192,12 @@ class TestDo(PrintTestCase):
             call("done.txt", "a"),  # open done.txt in append mode
             call().__enter__(),
             call().write(
-                "\n Two (%s)" % (current_datetime.strftime("%d-%m-%Y"))
-            ),  # write "Two" to done.txt
+                "\n One (%s)" % (current_datetime.strftime("%d-%m-%Y"))
+            ),  # write "One" to done.txt
             call().__exit__(None, None, None),
             call("todo.txt", "w"),
             call().__enter__(),
-            call().write("One\nThree\n"),  # write "One\nThree\n" to todo.txt
+            call().write("Two\nThree\n"),  # write "One\nThree\n" to todo.txt
             call().__exit__(None, None, None),
         ]
         for actual, expected in zip(m.mock_calls, expected_calls):
@@ -202,28 +207,82 @@ class TestDo(PrintTestCase):
     def test_doing_the_first_item(self):
         m = mock_open(read_data="One\nTwo\nThree\n")
         with patch("todo.open", m):
-            with patch.object(sys, "argv", ["todo.py", "do", "0"]):  # changed 0 -- 1
+            with patch.object(sys, "argv", ["todo.py", "do", "1"]):
                 Handler().handle()
 
         self.assertEqual(len(m.mock_calls), 12)
         self.assertAppendedToDoneFile(
             m, "\n One (%s)" % (current_datetime.strftime("%d-%m-%Y"))
         )  # changed
-        self.assertWrittenToTodoFile(m, "Two\nThree\n")  # changed
+        self.assertWrittenToTodoFile(m, "Two\nThree\n")
         self.assertPrinted("Done: One\n")
 
     def test_doing_the_last_item(self):
         m = mock_open(read_data="One\nTwo\nThree\n")
         with patch("todo.open", m):
-            with patch.object(sys, "argv", ["todo.py", "do", "3"]):  # changed 2 -- 3
+            with patch.object(sys, "argv", ["todo.py", "do", "3"]):
                 Handler().handle()
 
         self.assertEqual(len(m.mock_calls), 12)
         self.assertAppendedToDoneFile(
             m, "\n Three (%s)" % (current_datetime.strftime("%d-%m-%Y"))
         )  # changed
-        self.assertWrittenToTodoFile(m, "One\nTwo\nThree\n")  # changed
+        self.assertWrittenToTodoFile(m, "One\nTwo\n")
         self.assertPrinted("Done: Three\n")
+
+
+# Testcase for Deletion
+class TestDeletion(PrintTestCase):
+    def test_action(self):
+        """Test that the pri() method is called"""
+        testargs = ["todo.py", "delete", "1"]
+        with patch.object(sys, "argv", testargs):
+            handler = Handler()
+            with patch.object(handler, "delete") as mock_del:
+                handler.handle()
+                mock_del.assert_called_once_with()
+
+    def test_file_handling(self):
+        """Test that the file is opened in 'a' mode in a context manager"""
+        m = mock_open(read_data="one\ntwo\nthree\n")
+        with patch("todo.open", m):
+            with patch.object(sys, "argv", ["todo.py", "delete", "1"]):
+                Handler().delete()
+
+        self.assertEqual(m.mock_calls[0], call("todo.txt", "r"))
+        self.assertEqual(m.mock_calls[1], call().__enter__())
+        self.assertPrinted("Deleted: one\n")
+
+
+# Testcase Priority
+class TestPriority(PrintTestCase):
+    def test_action(self):
+        """Test that the pri() method is called"""
+        testargs = ["todo.py", "pri", "1B"]
+        with patch.object(sys, "argv", testargs):
+            handler = Handler()
+            with patch.object(handler, "pri") as mock_pri:
+                handler.handle()
+                mock_pri.assert_called_once_with()
+
+    def test_priority_assigning(self):
+        m = mock_open(read_data="One/nTwo/n")
+        with patch("todo.open", m):
+            with patch.object(sys, "argv", ["todo.py", "pri", "2B"]):
+                Handler().pri()
+        self.assertEqual(m.mock_calls[0], call("todo.txt", "r+"))
+        self.assertEqual(m.mock_calls[1], call().__enter__())
+
+        self.assertPrinted("")
+
+    def test_priority_replacing(self):
+        m = mock_open(read_data="One/nTwo/n")
+        with patch("todo.open", m):
+            with patch.object(sys, "argv", ["todo.py", "pri", "2D"]):
+                Handler().pri()
+        self.assertEqual(m.mock_calls[0], call("todo.txt", "r+"))
+        self.assertEqual(m.mock_calls[1], call().__enter__())
+        self.assertPrinted("")
 
 
 if __name__ == "__main__":
